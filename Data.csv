@@ -1,0 +1,12 @@
+title,id,url,viewcount,date,channelName,channelUrl,numberOfSubscribers,duration
+"Comment apprendre Python en 2024",vid001,https://youtube.com/watch?v=001,15000,2024-01-15,CodeAcademy,https://youtube.com/codeacademy,50000,1200
+"Recette de cookies aux pépites de chocolat",vid002,https://youtube.com/watch?v=002,25000,2024-01-20,CuisineFacile,https://youtube.com/cuisinefacile,30000,600
+"Tutoriel JavaScript pour débutants",vid003,https://youtube.com/watch?v=003,18000,2024-01-25,WebDev,https://youtube.com/webdev,75000,1800
+"Voyage en Thaïlande - Guide complet",vid004,https://youtube.com/watch?v=004,45000,2024-02-01,TravelVlog,https://youtube.com/travelvlog,120000,2400
+"Apprendre React en 30 minutes",vid005,https://youtube.com/watch?v=005,22000,2024-02-05,ReactMaster,https://youtube.com/reactmaster,90000,1800
+"Recette de pizza maison",vid006,https://youtube.com/watch?v=006,32000,2024-02-10,ChefItaliano,https://youtube.com/chefitaliano,80000,900
+"Guide d'achat smartphone 2024",vid007,https://youtube.com/watch?v=007,67000,2024-02-15,TechReview,https://youtube.com/techreview,200000,2100
+"Tutoriel CSS Grid Layout",vid008,https://youtube.com/watch?v=008,12000,2024-02-20,CSSExpert,https://youtube.com/cssexpert,45000,1500
+"Voyage au Japon - Tokyo en 5 jours",vid009,https://youtube.com/watch?v=009,38000,2024-02-25,JapanTravel,https://youtube.com/japantravel,95000,2700
+"Apprendre Node.js - Backend Development",vid010,https://youtube.com/watch?v=010,19000,2024-03-01,BackendPro,https://youtube.com/backendpro,60000,2400
+

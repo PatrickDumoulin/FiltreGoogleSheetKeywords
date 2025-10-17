@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h2 class="card-title mb-0">
+                    <i class="fas fa-upload me-2"></i>
+                    Import de Fichiers CSV
+                </h2>
+            </div>
+            <div class="card-body p-4">
+                <form action="{{ url_for('upload_files') }}" method="post" enctype="multipart/form-data" id="uploadForm">
+                    <div class="row">
+                        <!-- Fichier Data.csv -->
+                        <div class="col-md-6 mb-4">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-database me-2 text-primary"></i>
+                                Fichier Data.csv
+                            </label>
+                            <div class="upload-area" id="dataUploadArea">
+                                <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3"></i>
+                                <p class="mb-2">Glissez-déposez votre fichier Data.csv ici</p>
+                                <p class="text-muted small">ou cliquez pour sélectionner</p>
+                                <input type="file" name="data_file" class="d-none" accept=".csv" required>
+                                <div class="file-info" style="display: none;"></div>
+                            </div>
+                            <small class="text-muted">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Colonnes attendues: title, id, url, viewcount, date, channelName, channelUrl, numberOfSubscribers, duration
+                            </small>
+                        </div>
+
+                        <!-- Fichier keywords.csv -->
+                        <div class="col-md-6 mb-4">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-key me-2 text-success"></i>
+                                Fichier keywords.csv
+                            </label>
+                            <div class="upload-area" id="keywordsUploadArea">
+                                <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3"></i>
+                                <p class="mb-2">Glissez-déposez votre fichier keywords.csv ici</p>
+                                <p class="text-muted small">ou cliquez pour sélectionner</p>
+                                <input type="file" name="keywords_file" class="d-none" accept=".csv" required>
+                                <div class="file-info" style="display: none;"></div>
+                            </div>
+                            <small class="text-muted">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Colonne attendue: keyword (liste des mots-clés à rechercher)
+                            </small>
+                        </div>
+                    </div>
+
+                    <div class="text-center">
+                        <button type="submit" class="btn btn-custom btn-lg px-5" id="submitBtn">
+                            <i class="fas fa-magic me-2"></i>
+                            Filtrer les Vidéos
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Instructions -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-question-circle me-2"></i>
+                    Comment utiliser cette application ?
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-file-csv text-primary me-2"></i>Fichier Data.csv</h6>
+                        <p class="small text-muted">
+                            Ce fichier doit contenir vos données de vidéos avec les colonnes :
+                            title, id, url, viewcount, date, channelName, channelUrl, numberOfSubscribers, duration
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-key text-success me-2"></i>Fichier keywords.csv</h6>
+                        <p class="small text-muted">
+                            Ce fichier doit contenir une colonne "keyword" avec la liste des mots-clés
+                            que vous souhaitez rechercher dans les titres et noms de chaînes.
+                        </p>
+                    </div>
+                </div>
+                <div class="alert alert-info mt-3">
+                    <i class="fas fa-lightbulb me-2"></i>
+                    <strong>Astuce :</strong> Le programme analysera le titre et le nom de la chaîne de chaque vidéo.
+                    Si au moins un mot-clé est trouvé, la vidéo sera marquée comme "Gardé", sinon "Rejeté".
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('uploadForm').addEventListener('submit', function(e) {
+    const submitBtn = document.getElementById('submitBtn');
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Traitement en cours...';
+    submitBtn.disabled = true;
+});
+</script>
+{% endblock %}
+
