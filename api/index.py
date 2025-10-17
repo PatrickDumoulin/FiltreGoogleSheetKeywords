@@ -4,27 +4,14 @@
 API serverless pour Vercel - Filtreur de vidéos par mots-clés
 """
 
-from flask import Flask, request, jsonify
 import pandas as pd
-import tempfile
-import os
 import json
-from werkzeug.utils import secure_filename
+from io import StringIO
 
-app = Flask(__name__)
-
-# Configuration pour Vercel
-UPLOAD_FOLDER = '/tmp'
-ALLOWED_EXTENSIONS = {'csv'}
-
-def allowed_file(filename):
-    """Vérifie si le fichier a une extension autorisée"""
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
-def charger_mots_cles(fichier_keywords):
-    """Charge les mots-clés depuis le fichier CSV"""
+def charger_mots_cles(keywords_content):
+    """Charge les mots-clés depuis le contenu CSV"""
     try:
-        df_keywords = pd.read_csv(fichier_keywords)
+        df_keywords = pd.read_csv(StringIO(keywords_content))
         
         if 'keyword' in df_keywords.columns:
             mots_cles = df_keywords['keyword'].tolist()
@@ -61,23 +48,13 @@ def filtrer_videos(data_content, keywords_content):
     """Filtre les vidéos en fonction des mots-clés"""
     try:
         # Charger les mots-clés
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False) as f:
-            f.write(keywords_content)
-            keywords_path = f.name
-        
-        mots_cles = charger_mots_cles(keywords_path)
-        os.unlink(keywords_path)
+        mots_cles = charger_mots_cles(keywords_content)
         
         if not mots_cles:
             return None, "Aucun mot-clé valide trouvé"
         
         # Charger les données des vidéos
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False) as f:
-            f.write(data_content)
-            data_path = f.name
-        
-        df_data = pd.read_csv(data_path)
-        os.unlink(data_path)
+        df_data = pd.read_csv(StringIO(data_content))
         
         # Créer une copie du DataFrame
         df_resultat = df_data.copy()
@@ -112,9 +89,106 @@ def filtrer_videos(data_content, keywords_content):
     except Exception as e:
         return None, f"Erreur lors du filtrage: {str(e)}"
 
-@app.route('/')
-def index():
-    """Page d'accueil - redirige vers l'interface statique"""
+def handler(request):
+    """Handler principal pour Vercel"""
+    try:
+        # Gestion des CORS
+        headers = {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type',
+            'Content-Type': 'application/json'
+        }
+        
+        # Gestion des requêtes OPTIONS (CORS preflight)
+        if request.method == 'OPTIONS':
+            return {
+                'statusCode': 200,
+                'headers': headers,
+                'body': ''
+            }
+        
+        # Route principale
+        if request.path == '/' or request.path == '':
+            return {
+                'statusCode': 200,
+                'headers': {'Content-Type': 'text/html'},
+                'body': get_homepage_html()
+            }
+        
+        # Route API de filtrage
+        elif request.path == '/api/filter' and request.method == 'POST':
+            return handle_filter_request(request, headers)
+        
+        # Route par défaut
+        else:
+            return {
+                'statusCode': 404,
+                'headers': headers,
+                'body': json.dumps({'error': 'Not found'})
+            }
+            
+    except Exception as e:
+        return {
+            'statusCode': 500,
+            'headers': headers,
+            'body': json.dumps({'error': f'Internal server error: {str(e)}'})
+        }
+
+def handle_filter_request(request, headers):
+    """Gère les requêtes de filtrage"""
+    try:
+        # Récupérer les données du formulaire
+        form_data = request.form
+        
+        if 'data_file' not in form_data or 'keywords_file' not in form_data:
+            return {
+                'statusCode': 400,
+                'headers': headers,
+                'body': json.dumps({'success': False, 'error': 'Veuillez sélectionner les deux fichiers CSV'})
+            }
+        
+        data_content = form_data['data_file']
+        keywords_content = form_data['keywords_file']
+        
+        # Effectuer le filtrage
+        csv_result, stats = filtrer_videos(data_content, keywords_content)
+        
+        if csv_result is None:
+            return {
+                'statusCode': 400,
+                'headers': headers,
+                'body': json.dumps({'success': False, 'error': stats})
+            }
+        
+        # Calculer le taux de conservation
+        taux_conservation = round((stats['gardees'] / stats['total'] * 100), 1) if stats['total'] > 0 else 0
+        
+        return {
+            'statusCode': 200,
+            'headers': headers,
+            'body': json.dumps({
+                'success': True,
+                'csv_data': csv_result,
+                'stats': {
+                    'total': stats['total'],
+                    'gardees': stats['gardees'],
+                    'rejetees': stats['rejetees'],
+                    'mots_cles': stats['mots_cles'],
+                    'taux_conservation': taux_conservation
+                }
+            })
+        }
+        
+    except Exception as e:
+        return {
+            'statusCode': 500,
+            'headers': headers,
+            'body': json.dumps({'success': False, 'error': f'Erreur lors du traitement: {str(e)}'})
+        }
+
+def get_homepage_html():
+    """Retourne le HTML de la page d'accueil"""
     return """
     <!DOCTYPE html>
     <html lang="fr">
@@ -405,54 +479,3 @@ def index():
     </body>
     </html>
     """
-
-@app.route('/api/filter', methods=['POST'])
-def filter_videos():
-    """API endpoint pour filtrer les vidéos"""
-    try:
-        if 'data_file' not in request.files or 'keywords_file' not in request.files:
-            return jsonify({'success': False, 'error': 'Veuillez sélectionner les deux fichiers CSV'})
-        
-        data_file = request.files['data_file']
-        keywords_file = request.files['keywords_file']
-        
-        if data_file.filename == '' or keywords_file.filename == '':
-            return jsonify({'success': False, 'error': 'Veuillez sélectionner les deux fichiers CSV'})
-        
-        if not (allowed_file(data_file.filename) and allowed_file(keywords_file.filename)):
-            return jsonify({'success': False, 'error': 'Seuls les fichiers CSV sont autorisés'})
-        
-        # Lire le contenu des fichiers
-        data_content = data_file.read().decode('utf-8')
-        keywords_content = keywords_file.read().decode('utf-8')
-        
-        # Effectuer le filtrage
-        csv_result, stats = filtrer_videos(data_content, keywords_content)
-        
-        if csv_result is None:
-            return jsonify({'success': False, 'error': stats})
-        
-        # Calculer le taux de conservation
-        taux_conservation = round((stats['gardees'] / stats['total'] * 100), 1) if stats['total'] > 0 else 0
-        
-        return jsonify({
-            'success': True,
-            'csv_data': csv_result,
-            'stats': {
-                'total': stats['total'],
-                'gardees': stats['gardees'],
-                'rejetees': stats['rejetees'],
-                'mots_cles': stats['mots_cles'],
-                'taux_conservation': taux_conservation
-            }
-        })
-        
-    except Exception as e:
-        return jsonify({'success': False, 'error': f'Erreur lors du traitement: {str(e)}'})
-
-# Handler pour Vercel
-def handler(request):
-    return app(request.environ, lambda *args: None)
-
-if __name__ == '__main__':
-    app.run(debug=True)
